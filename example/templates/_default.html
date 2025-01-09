@@ -1,0 +1,23 @@
+{% extends "_layout.html" %}
+{% block main %}
+<table>
+    <thead>
+        <tr>
+            <th>subject</th>
+            <th>predicate</th>
+            <th>object</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for subject, predicate, object in graph %}
+        {% if subject != graph.identifier %}
+        <tr id="{{ subject }}">
+            <td>{{ subject }}</td>
+            <td>{{ predicate }}</td>
+            <td property="{{ predicate }}">{{ object }}</td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

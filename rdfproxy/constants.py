@@ -1,0 +1,58 @@
+"""Constant values used within the application."""
+
+from typing import Set
+from typing import Dict
+from typing import Sequence
+from collections import OrderedDict
+
+from rdflib.term import URIRef
+from rdflib.namespace import SDO
+
+# The prefix of file URIs
+FILE_URI_PREFIX = "file://"
+
+# The mimetypes need to be ordered for content negotiation purposes,
+# and mapped to format keywords for RDFLib serialization
+MIMETYPE_FORMATS: Dict[str, str] = OrderedDict(
+    (
+        ("text/turtle", "turtle"),
+        ("text/plain", "turtle"),
+        ("text/html", "html"),
+        ("text/n3", "n3"),
+        ("application/hext", "hext"),
+        ("application/ld+json", "json-ld"),
+        ("application/n-quads", "nquads"),
+        ("application/n-triples", "nt11"),
+        ("application/rdf+xml", "pretty-xml"),
+        ("application/trig", "trig"),
+        ("application/trix", "trix"),
+    )
+)
+
+# Accepted mimetypes in preferential order
+ACCEPT_MIMETYPES: Sequence[str] = tuple(MIMETYPE_FORMATS.keys())
+
+# Additional mimetypes used to identify content types of files based on extension
+ADDITIONAL_MIMETYPES: Dict[str, str] = {
+    ".ttl": "text/turtle",
+    ".nt": "application/n-triples",
+    ".nq": "application/n-quads",
+    ".jsonld": "application/ld+json",
+    ".rdf": "application/rdf+xml",
+    ".n3": "text/n3",
+    ".hext": "application/hext",
+    ".trig": "application/trig",
+    ".trix": "application/trix",
+}
+
+# Convenient set of RDF file extensions only
+RDF_FILE_EXTENSIONS: Set[str] = set(ADDITIONAL_MIMETYPES.keys())
+
+# List of SPARQL file extensions
+SPARQL_FILE_EXTENSIONS: Set[str] = set((".rq", ".sparql"))
+
+# Set of predicates to load object data directly into from a local file
+CONTENT_EMBED_PREDICATES: Set[URIRef] = set((SDO.articleBody, SDO.text))
+
+# The date format used for xsd:dateTime
+XSD_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S"

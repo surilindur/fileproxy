@@ -1,0 +1,9 @@
+{% extends "_layout.html" %}
+{% set foaf_primary_topic = graph.namespace_manager.absolutize("http://xmlns.com/foaf/0.1/primaryTopic") %}
+{% set foaf_name = graph.namespace_manager.absolutize("http://xmlns.com/foaf/0.1/name") %}
+{% set webid_uri = graph.value(subject=uri, predicate=foaf_primary_topic) %}
+{% block main %}
+<section id="{{ webid_uri }}">
+    <h1 property="{{ foaf_name }}">{{ graph.value(subject=webid_uri, predicate=foaf_name) }}</h1>
+</section>
+{% endblock %}
