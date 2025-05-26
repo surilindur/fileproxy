@@ -47,7 +47,7 @@ For example, to configure [Flask-CORS](https://flask-cors.readthedocs.io/en/late
 
 * `FLASK_CORS_ALWAYS_SEND=false` to not force send CORS headers when not requested.
 * `FLASK_CORS_MAX_AGE=3600` to set `Access-Control-Max-Age` to 3600 seconds.
-* `FLASK_CORS_METHODS=[ 'GET', 'HEAD', 'OPTIONS' ]` to only allow `GET` and `HEAD` requests.
+* `FLASK_CORS_METHODS='[ "GET", "HEAD", "OPTIONS" ]'` to only allow `GET` and `HEAD` requests.
 * `FLASK_CORS_ORIGINS='*'` to allow any `Origin`.
 * `FLASK_CORS_SUPPORTS_CREDENTIALS=true` to avoid CORS errors when credentials are provided.
 
