@@ -75,6 +75,7 @@ The following variables are made available to the templates:
 * Current document graph as `graph`
 * Current document URI as `uri`
 * Current error message as `error`
+* Current type name used to select template as `type` unless using the default template
 * Markdown-to-HTML conversion function as `html`
 
 ## Issues
