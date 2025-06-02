@@ -5,6 +5,7 @@ from typing import Any
 from typing import Dict
 from logging import basicConfig
 from logging import INFO
+from logging import error
 from logging import warning
 from logging import exception
 from datetime import UTC
@@ -21,6 +22,8 @@ from flask_cors import CORS as FlaskCORS
 
 from mistune import Markdown
 from mistune import HTMLRenderer
+
+from jinja2.exceptions import TemplateNotFound
 
 from werkzeug.exceptions import HTTPException
 from werkzeug.exceptions import NotFound
@@ -59,6 +62,12 @@ cors = FlaskCORS(app=app)
 # Configure Mistune
 html = Markdown(renderer=HTMLRenderer(escape=False, allow_harmful_protocols=False))
 
+# Helper functions for resolving host and protocol
+request_host = lambda: request.headers.get(key="x-forwarded-for", default=request.host)
+request_proto = lambda: request.headers.get(
+    key="x-forwarded-proto", default=request.scheme
+)
+
 
 @app.get("/")
 @app.get("/<path:path>")
@@ -66,9 +75,7 @@ def get_document(path: str = "/") -> Response:
     """Return a document-scoped collection of CBDs in the client-preferrec format."""
 
     # Find the document graph based on original client-facing URI
-    request_host = request.headers.get(key="x-forwarded-for", default=request.host)
-    request_proto = request.headers.get(key="x-forwarded-proto", default=request.scheme)
-    document_uri = URIRef(value=path, base=f"{request_proto}://{request_host}")
+    document_uri = URIRef(value=path, base=f"{request_proto()}://{request_host()}")
     document_graph = get_document_data(uri=document_uri)
     document_mimetype: str | None = None
 
@@ -120,7 +127,7 @@ def get_document(path: str = "/") -> Response:
         document_graph.remove((document_uri, SDO.contentUrl, None))
 
     if format_keyword == "html":
-        template_name = find_template(
+        template_name, template_type = find_template(
             uri=document_uri,
             type_uris=document_graph.objects(
                 subject=document_uri,
@@ -132,6 +139,7 @@ def get_document(path: str = "/") -> Response:
             return render_template(
                 template_name,
                 uri=document_uri,
+                type=template_type,
                 graph=document_graph,
             )
     else:
@@ -155,21 +163,29 @@ def handle_context() -> Dict[str, Any]:
 
 
 @app.errorhandler(Exception)
-def handle_error(error: Exception) -> Response:
+def handle_error(exc: Exception) -> Response:
     """Return a representation of a server error."""
 
     response: str | None = None
 
-    if isinstance(error, HTTPException):
-        status_code = error.code
+    if isinstance(exc, HTTPException):
+        status_code = exc.code
     else:
-        exception(error)
+        exception(exc)
         status_code = HTTPStatus.INTERNAL_SERVER_ERROR.value
 
     if request.accept_mimetypes.accept_html:
-        response = render_template(
-            template_name_or_list=[f"_{status_code}.html", "_error.html"],
-            error=format_exc() if app.debug else str(error),
-        )
+        try:
+            response = render_template(
+                template_name_or_list=[
+                    f"{request_host()}/_{status_code}.html",
+                    f"{request_host()}/_error.html",
+                    f"_{status_code}.html",
+                    "_error.html",
+                ],
+                error=format_exc() if app.debug else str(exc),
+            )
+        except TemplateNotFound as ex:
+            error(ex)
 
     return Response(response=response, status=status_code)

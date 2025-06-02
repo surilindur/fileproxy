@@ -1,6 +1,7 @@
 """Utiliies for templates."""
 
 from typing import Set
+from typing import Tuple
 from typing import Dict
 from typing import Iterable
 from logging import debug
@@ -42,7 +43,10 @@ def load_templates() -> Dict[str, Dict[str, str]]:
     return templates
 
 
-def find_template(uri: URIRef, type_uris: Iterable[URIRef]) -> str | None:
+def find_template(
+    uri: URIRef,
+    type_uris: Iterable[URIRef],
+) -> Tuple[str | None, str | None]:
     """Attempts to locate the template for a resource with the specified types."""
 
     parsed_uri = urlparse(uri)
@@ -55,6 +59,6 @@ def find_template(uri: URIRef, type_uris: Iterable[URIRef]) -> str | None:
         if type_name in domain_templates:
             template_path = domain_templates[type_name]
             debug(f"Mapped {uri} to template {template_path}")
-            return template_path
+            return template_path, type_name
 
-    return templates.get(DEFAULT_TEMPLATE)
+    return templates.get(DEFAULT_TEMPLATE), None
