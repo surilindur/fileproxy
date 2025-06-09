@@ -56,3 +56,12 @@ CONTENT_EMBED_PREDICATES: Set[URIRef] = set((SDO.articleBody, SDO.text))
 
 # The date format used for xsd:dateTime
 XSD_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
+
+# Custom namespace prefixes that are not included in RDFLib by default
+CUSTOM_PREFIXES: Dict[str, str] = {
+    "vcard": "http://www.w3.org/2006/vcard/ns#",
+    "cv": "http://rdfs.org/resume-rdf/cv.rdfs#",
+    "pim": "http://www.w3.org/ns/pim/space#",
+    "ldp": "http://www.w3.org/ns/ldp#",
+    "solid": "http://www.w3.org/ns/solid/terms#",
+}

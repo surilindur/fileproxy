@@ -9,6 +9,7 @@ from logging import warning
 from datetime import datetime
 from datetime import UTC
 from mimetypes import guess_file_type
+from mimetypes import add_type
 from functools import cache
 from urllib.parse import urljoin
 
@@ -20,7 +21,9 @@ from rdflib.graph import Dataset
 from rdflib.namespace import RDF
 from rdflib.namespace import SDO
 from rdflib.namespace import XSD
+from rdflib.namespace import VOID
 
+from constants import CUSTOM_PREFIXES
 from constants import FILE_URI_PREFIX
 from constants import RDF_FILE_EXTENSIONS
 from constants import XSD_DATETIME_FORMAT
@@ -31,6 +34,10 @@ from utils import get_file_sha256sum
 from utils import uri_to_path
 from utils import env_to_path
 from utils import find_files
+
+
+# Add custom mimetypes
+add_type("application/x-bibtex", ".bib", strict=False)
 
 
 def parse_rdf_file(path: Path) -> Graph:
@@ -48,12 +55,27 @@ def parse_rdf_file(path: Path) -> Graph:
                 with open(o_path, "r", encoding="utf-8") as o_file:
                     graph.set((s, p, Literal(o_file.read())))
             else:
-                graph.set((s, p, URIRef(o_path.as_uri())))
+                graph.remove((s, p, o))
+                graph.add((s, p, URIRef(o_path.as_uri())))
 
     for s in graph.subjects(predicate=RDF.type, object=SDO.MediaObject):
-        s_uri = graph.value(subject=s, predicate=SDO.contentUrl)
-        assert isinstance(s_uri, URIRef), f"Missing schema:contentUrl for {s}"
+        s_uri = next(
+            (
+                u
+                for u in graph.objects(subject=s, predicate=SDO.contentUrl)
+                if isinstance(u, URIRef) and u.startswith(FILE_URI_PREFIX)
+            ),
+            None,
+        )
+
+        if not s_uri:
+            warning(f"Skip metadata extraction for {s.n3()}")
+            continue
+
         s_path = uri_to_path(s_uri)
+
+        # Add name
+        graph.set((s, SDO.name, Literal(s_path.name)))
 
         # Add mimetype
         s_type = guess_file_type(path=s_path, strict=False)[0]
@@ -109,21 +131,29 @@ def get_dataset() -> Graph:
     info("Grouping into datasets for VoID generation")
 
     datasets_for_void: Dict[URIRef, Graph] = {}
+    non_uri_subjects = 0
 
     for s, p, o in graph:
-        assert isinstance(s, URIRef), f"Detected blank node {s}"
-        dataset_uri = URIRef(urljoin(base=s, url="/", allow_fragments=False))
-        if dataset_uri not in datasets_for_void:
-            datasets_for_void[dataset_uri] = Graph(identifier=dataset_uri)
-        datasets_for_void[dataset_uri].add((s, p, o))
+        if isinstance(s, URIRef):
+            dataset_uri = URIRef(urljoin(base=s, url="/", allow_fragments=False))
+            if dataset_uri not in datasets_for_void:
+                datasets_for_void[dataset_uri] = Graph(identifier=dataset_uri)
+            graph.cbd(resource=s, target_graph=datasets_for_void[dataset_uri])
+        else:
+            non_uri_subjects += 1
+
+    if non_uri_subjects:
+        warning(f"Detected {non_uri_subjects} non-URI resources")
 
     for dataset_uri, dataset_graph in datasets_for_void.items():
-        info(f"Generating VoID description for {dataset_uri}")
+        info(f"Generating VoID description for {dataset_uri.n3()}")
         dataset_void = generateVoID(
             g=dataset_graph,
             dataset=dataset_uri,
             distinctForPartitions=True,
         )[0]
+
+        # Convert underscore identifiers to fragments on the dataset URI
         partition_prefix = f"{dataset_uri}_"
         for s, p, o in dataset_void:
             if isinstance(s, URIRef) and s.startswith(partition_prefix):
@@ -131,6 +161,9 @@ def get_dataset() -> Graph:
             if isinstance(o, URIRef) and o.startswith(partition_prefix):
                 o = partition_to_fragment(dataset_uri=dataset_uri, partition_uri=o)
             graph.add((s, p, o))
+
+        # Add void:uriSpace
+        graph.add((dataset_uri, VOID.uriSpace, Literal(dataset_uri)))
 
     info(f"Loaded {len(graph)} triples")
 
@@ -148,23 +181,17 @@ def get_document_data(uri: URIRef) -> Dataset:
     document_graph = document_dataset.add_graph(g=document_dataset_uri)
 
     if app_dataset:
-        query = f"""
-            CONSTRUCT {{
-                ?s ?p ?o .
-            }} WHERE {{
-                {{
-                    ?s ?p ?o .
-                    VALUES ?s {{ {uri.n3()} }}
-                }}
-                UNION
-                {{
-                    ?s ?p ?o .
-                    FILTER ( isIRI(?s) && STRSTARTS(STR(?s), "{uri}#") )
-                }}
-            }}
-        """
-        # Clean up the query to avoid sending too many whitespaces
-        query = query.replace("    ", "").replace("\n", " ").strip()
-        document_graph += app_dataset.query(query_object=query).graph
+        # Collect the document URI itself, and all associated bnodes
+        app_dataset.cbd(resource=uri, target_graph=document_graph)
+
+        # Collect all fragments that belong in the document URI, and their bnodes
+        uri_fragment_prefix = f"{uri}#"
+        for s in app_dataset.subjects(unique=True):
+            if isinstance(s, URIRef) and s.startswith(uri_fragment_prefix):
+                app_dataset.cbd(resource=s, target_graph=document_graph)
+
+    # Bind additional namespaces
+    for prefix, namespace_uri in CUSTOM_PREFIXES.items():
+        document_dataset.namespace_manager.bind(prefix, namespace_uri)
 
     return document_dataset

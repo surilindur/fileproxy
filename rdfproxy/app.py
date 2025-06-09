@@ -4,6 +4,7 @@ from http import HTTPStatus
 from typing import Any
 from typing import Dict
 from logging import basicConfig
+from logging import DEBUG
 from logging import INFO
 from logging import error
 from logging import warning
@@ -11,6 +12,7 @@ from logging import exception
 from datetime import UTC
 from datetime import datetime
 from traceback import format_exc
+from urllib.parse import urlparse
 
 from flask import Flask
 from flask import request
@@ -36,25 +38,30 @@ from rdflib.namespace import SDO
 
 from resources import get_document_data
 from utils import uri_to_path
+from utils import sort_by_predicate
+from utils import remove_file_uris
 from templates import find_template
 from templates import TEMPLATE_PATH
 from constants import ACCEPT_MIMETYPES
 from constants import MIMETYPE_FORMATS
-
-# Configure logging
-basicConfig(
-    format="[%(asctime)s] [%(levelname)s] %(message)s",
-    datefmt="%Y-%m-%dT%H:%M:%S%z",
-    level=INFO,
-)
 
 # The Flask application, with template clean-ups
 app = Flask(import_name=__name__, template_folder=TEMPLATE_PATH)
 app.jinja_env.lstrip_blocks = True
 app.jinja_env.trim_blocks = True
 
+# Custom filters
+app.jinja_env.filters["sort_by_predicate"] = sort_by_predicate
+
 # Load configuration from environment variables if available
 app.config.from_prefixed_env()
+
+# Configure logging
+basicConfig(
+    format="[%(asctime)s] [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%dT%H:%M:%S%z",
+    level=DEBUG if app.debug else INFO,
+)
 
 # Setup Flask-CORS
 cors = FlaskCORS(app=app)
@@ -64,6 +71,7 @@ html = Markdown(renderer=HTMLRenderer(escape=False, allow_harmful_protocols=Fals
 
 # Helper functions for resolving host and protocol
 request_host = lambda: request.headers.get(key="x-forwarded-for", default=request.host)
+request_hostname = lambda: urlparse(f"http://{request_host()}/").hostname
 request_proto = lambda: request.headers.get(
     key="x-forwarded-proto", default=request.scheme
 )
@@ -76,20 +84,21 @@ def get_document(path: str = "/") -> Response:
 
     # Find the document graph based on original client-facing URI
     document_uri = URIRef(value=path, base=f"{request_proto()}://{request_host()}")
-    document_graph = get_document_data(uri=document_uri)
+    document_dataset = get_document_data(uri=document_uri)
     document_mimetype: str | None = None
 
-    if not document_graph:
+    if not document_dataset:
         raise NotFound()
 
     available_mimetypes = [*ACCEPT_MIMETYPES]
 
     # Check if the document is a schema:MediaObject with mimetype
-    if (document_uri, RDF.type, SDO.MediaObject) in document_graph:
-        document_mimetype = document_graph.value(
+    if (document_uri, RDF.type, SDO.MediaObject) in document_dataset:
+        document_mimetype = document_dataset.value(
             subject=document_uri,
             predicate=SDO.encodingFormat,
         )
+        available_mimetypes.remove("text/html")
         available_mimetypes.insert(0, document_mimetype)
 
     mimetype = (
@@ -101,7 +110,7 @@ def get_document(path: str = "/") -> Response:
     if not mimetype:
         raise NotAcceptable()
 
-    same_as = document_graph.value(subject=document_uri, predicate=OWL.sameAs)
+    same_as = document_dataset.value(subject=document_uri, predicate=OWL.sameAs)
 
     if same_as and isinstance(same_as, URIRef):
         return Response(
@@ -112,7 +121,7 @@ def get_document(path: str = "/") -> Response:
     if mimetype == document_mimetype:
         return send_file(
             path_or_file=uri_to_path(
-                document_graph.value(
+                document_dataset.value(
                     subject=document_uri,
                     predicate=SDO.contentUrl,
                 )
@@ -123,13 +132,12 @@ def get_document(path: str = "/") -> Response:
     format_keyword = MIMETYPE_FORMATS[mimetype]
 
     # Remove the actual file URI before serving the graph
-    if (document_uri, RDF.type, SDO.MediaObject) in document_graph:
-        document_graph.remove((document_uri, SDO.contentUrl, None))
+    document_dataset = remove_file_uris(dataset=document_dataset)
 
     if format_keyword == "html":
         template_name, template_type = find_template(
             uri=document_uri,
-            type_uris=document_graph.objects(
+            type_uris=document_dataset.objects(
                 subject=document_uri,
                 predicate=RDF.type,
                 unique=True,
@@ -140,15 +148,15 @@ def get_document(path: str = "/") -> Response:
                 template_name,
                 uri=document_uri,
                 type=template_type,
-                graph=document_graph,
+                graph=document_dataset,
             )
     else:
         return Response(
-            response=document_graph.serialize(format=format_keyword),
+            response=document_dataset.serialize(format=format_keyword),
             mimetype=mimetype,
         )
 
-    warning(f"No {format_keyword} template found for {document_uri}")
+    warning(f"No {format_keyword} template found for {document_uri.n3()}")
 
     raise NotAcceptable()
 
@@ -178,8 +186,8 @@ def handle_error(exc: Exception) -> Response:
         try:
             response = render_template(
                 template_name_or_list=[
-                    f"{request_host()}/_{status_code}.html",
-                    f"{request_host()}/_error.html",
+                    f"{request_hostname()}/_{status_code}.html",
+                    f"{request_hostname()}/_error.html",
                     f"_{status_code}.html",
                     "_error.html",
                 ],

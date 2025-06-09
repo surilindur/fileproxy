@@ -52,13 +52,16 @@ def find_template(
     parsed_uri = urlparse(uri)
     templates = load_templates()
     domain = parsed_uri.hostname if parsed_uri.hostname in templates else DEFAULT_DOMAIN
-    domain_templates = templates[domain]
 
-    for type_uri in type_uris:
-        type_name = urlparse(type_uri).path.split("/")[-1]
-        if type_name in domain_templates:
-            template_path = domain_templates[type_name]
-            debug(f"Mapped {uri} to template {template_path}")
-            return template_path, type_name
+    if domain in templates:
+        domain_templates = templates[domain]
+
+        for type_uri in type_uris:
+            type_uri_parsed = urlparse(type_uri)
+            type_name = type_uri_parsed.fragment or type_uri_parsed.path.split("/")[-1]
+            if type_name in domain_templates:
+                template_path = domain_templates[type_name]
+                debug(f"Mapped {uri.n3()} to template {template_path}")
+                return template_path, type_name
 
     return templates.get(DEFAULT_TEMPLATE), None

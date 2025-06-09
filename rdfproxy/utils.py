@@ -5,10 +5,16 @@ from os.path import splitext
 from typing import Iterable
 from pathlib import Path
 from hashlib import sha256
+from logging import debug
 from urllib.parse import unquote
 from urllib.parse import urlparse
 
 from rdflib.term import URIRef
+from rdflib.graph import _SubjectType
+from rdflib.graph import Graph
+from rdflib.graph import Dataset
+
+from constants import FILE_URI_PREFIX
 
 CHUNK_SIZE = 64 * 1024
 
@@ -52,7 +58,7 @@ def find_files(path: Path, extensions: Iterable[str]) -> Iterable[Path]:
             yield path
 
 
-def env_to_path(key: str, default: str | None = None) -> Path:
+def env_to_path(key: str, default: str | None = None) -> Path | None:
     """Attempts to resolve an environment variable into a path."""
 
     value = getenv(key) or default
@@ -70,3 +76,30 @@ def partition_to_fragment(dataset_uri: URIRef, partition_uri: URIRef) -> URIRef:
     partition_fragment = URIRef(value=f"#{partition_hash}", base=dataset_uri)
 
     return partition_fragment
+
+
+def sort_by_predicate(
+    input: Iterable[_SubjectType],
+    graph: Graph,
+    predicate=URIRef,
+    reverse=False,
+) -> Iterable[URIRef]:
+    """Jinja filter for sorting subjects in a graph based on a predicate value."""
+
+    return sorted(
+        input,
+        key=lambda s: graph.value(subject=s, predicate=predicate),
+        reverse=reverse,
+    )
+
+
+def remove_file_uris(dataset: Dataset) -> Dataset:
+    """Helper utility to strip all file URIs from a graph, to avoid exposing them."""
+
+    for o in dataset.objects():
+        if isinstance(o, URIRef) and o.startswith(FILE_URI_PREFIX):
+            debug(f"Removing triples with object URI {o.n3()}")
+            for s, p in dataset.subject_predicates(object=o):
+                dataset.remove((s, p, o))
+
+    return dataset
