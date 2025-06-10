@@ -28,7 +28,7 @@ jobs:
       - name: Install pylint
         run: python -m pip install pylint
       - name: Run linter
-        run: python -m pylint --output-format colorized --max-line-length 88 ./rdfproxy
+        run: python -m pylint --output-format colorized --max-line-length 88 ./fileproxy
   test:
     name: Test
     needs: lint
@@ -43,12 +43,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       - name: Build application image
-        run: docker build --tag rdfproxy:dev .
+        run: docker build --tag fileproxy:dev .
       - name: Create application container
         run: |
-          docker create --network host --name rdfproxy rdfproxy:dev
+          docker create --network host --name fileproxy fileproxy:dev
       - name: Start application container
-        run: docker start rdfproxy
+        run: docker start fileproxy
       - name: Wait for application to be available
         run: curl -I --retry 20 --retry-all-errors --retry-delay 1 http://localhost:8000/
       - name: Test document conversion for HTML
@@ -80,7 +80,7 @@ jobs:
           curl -I http://localhost:8000/redirected
       - name: Stop application container
         if: always()
-        run: docker stop rdfproxy
+        run: docker stop fileproxy
   docker:
     name: Docker
     needs: test
@@ -100,4 +100,4 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: false
-          tags: rdfproxy:dev
+          tags: fileproxy:dev
