@@ -12,7 +12,6 @@ from logging import exception
 from datetime import UTC
 from datetime import datetime
 from traceback import format_exc
-from urllib.parse import urlparse
 
 from flask import Flask
 from flask import request
@@ -40,6 +39,9 @@ from resources import get_document_data
 from utils import uri_to_path
 from utils import sort_by_predicate
 from utils import remove_file_uris
+from utils import get_request_host
+from utils import get_request_hostname
+from utils import get_request_proto
 from templates import find_template
 from templates import TEMPLATE_PATH
 from constants import ACCEPT_MIMETYPES
@@ -69,13 +71,6 @@ cors = FlaskCORS(app=app)
 # Configure Mistune
 html = Markdown(renderer=HTMLRenderer(escape=False, allow_harmful_protocols=False))
 
-# Helper functions for resolving host and protocol
-request_host = lambda: request.headers.get(key="x-forwarded-for", default=request.host)
-request_hostname = lambda: urlparse(f"http://{request_host()}/").hostname
-request_proto = lambda: request.headers.get(
-    key="x-forwarded-proto", default=request.scheme
-)
-
 
 @app.get("/")
 @app.get("/<path:path>")
@@ -83,7 +78,9 @@ def get_document(path: str = "/") -> Response:
     """Return a document-scoped collection of CBDs in the client-preferrec format."""
 
     # Find the document graph based on original client-facing URI
-    document_uri = URIRef(value=path, base=f"{request_proto()}://{request_host()}")
+    document_uri = URIRef(
+        value=path, base=f"{get_request_proto()}://{get_request_host()}"
+    )
     document_dataset = get_document_data(uri=document_uri)
     document_mimetype: str | None = None
 
@@ -186,8 +183,8 @@ def handle_error(exc: Exception) -> Response:
         try:
             response = render_template(
                 template_name_or_list=[
-                    f"{request_hostname()}/_{status_code}.html",
-                    f"{request_hostname()}/_error.html",
+                    f"{get_request_hostname()}/_{status_code}.html",
+                    f"{get_request_hostname()}/_error.html",
                     f"_{status_code}.html",
                     "_error.html",
                 ],

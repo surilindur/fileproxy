@@ -14,9 +14,26 @@ from rdflib.graph import _SubjectType
 from rdflib.graph import Graph
 from rdflib.graph import Dataset
 
+from flask import request
+
 from constants import FILE_URI_PREFIX
 
 CHUNK_SIZE = 64 * 1024
+
+
+def get_request_host() -> str:
+    """Helper function to get request host with post number."""
+    return request.headers.get(key="x-forwarded-for", default=request.host)
+
+
+def get_request_hostname() -> str:
+    """Helper function to get request host without port number."""
+    return urlparse(f"http://{get_request_host()}/").hostname
+
+
+def get_request_proto() -> str:
+    """Helper function to get the request protocol."""
+    return request.headers.get(key="x-forwarded-proto", default=request.scheme)
 
 
 def get_file_sha256sum(path: Path) -> str:
@@ -79,7 +96,7 @@ def partition_to_fragment(dataset_uri: URIRef, partition_uri: URIRef) -> URIRef:
 
 
 def sort_by_predicate(
-    input: Iterable[_SubjectType],
+    subjects: Iterable[_SubjectType],
     graph: Graph,
     predicate=URIRef,
     reverse=False,
@@ -87,7 +104,7 @@ def sort_by_predicate(
     """Jinja filter for sorting subjects in a graph based on a predicate value."""
 
     return sorted(
-        input,
+        subjects,
         key=lambda s: graph.value(subject=s, predicate=predicate),
         reverse=reverse,
     )
