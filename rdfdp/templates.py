@@ -64,4 +64,4 @@ def find_template(
                 debug(f"Mapped {uri.n3()} to template {template_path}")
                 return template_path, type_name
 
-    return templates.get(DEFAULT_TEMPLATE), None
+    return None, None

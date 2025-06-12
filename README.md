@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/surilindur/fileproxy/actions/workflows/ci.yml"><img alt="CI" src=https://github.com/surilindur/fileproxy/actions/workflows/ci.yml/badge.svg?branch=main"></a>
+  <a href="https://github.com/surilindur/rdfdp/actions/workflows/ci.yml"><img alt="CI" src=https://github.com/surilindur/rdfdp/actions/workflows/ci.yml/badge.svg?branch=main"></a>
   <a href="https://www.python.org/"><img alt="Python" src="https://img.shields.io/badge/%3C%2F%3E-Python-%233776ab.svg"></a>
   <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/Code%20Style-black-000000.svg"></a>
   <a href="https://opensource.org/licenses/MIT"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-%23750014.svg"></a>
@@ -13,7 +13,8 @@ Experimental simple Flask application to serve resources from local documents wi
 Everything is declared in RDF, including static assets, to enable content negotiation over all resources.
 
 Upon first request, the application loads all RDF documents from the specified path on disk into an in-memory store,
-and fills in the remaining metadata for static assets, such as checksums and modification date.
+and fills in the remaining metadata for static assets, such as checksums and modification date,
+as well as executes all queries sorted by their names on this in-memory dataset.
 The application also generates a VoID description for each distinct hostname in the data, to treat them as datasets.
 
 For each response, the application attempts to find a corresponding resource from the in-memory store.
@@ -33,9 +34,9 @@ For RDF resources, Turtle serialization is preferred in absence of accepted type
 
 The application can be configured using environment variables:
 
-* `DATA_PATH`: The RDF data directory, defaults to `data`.
-* `QUERIES_PATH`: The queries directory, defaults to `queries`.
-* `TEMPLATE_PATH`: The path to the templates directory, defaults to `templates`.
+* `DATA_PATH`: The RDF data directory.
+* `QUERIES_PATH`: The queries directory.
+* `TEMPLATE_PATH`: The path to the templates directory.
 
 The following HTTP proxy headers will be taken into consideration when identifying actual resource URIs:
 
@@ -71,12 +72,16 @@ The fallback error template name is `_error.html`, and HTTP status code errors u
 
 The following variables are made available to the templates:
 
-* Current year as `year`
-* Current document graph as `graph`
-* Current document URI as `uri`
-* Current error message as `error`
-* Current type name used to select template as `type` unless using the default template
-* Markdown-to-HTML conversion function as `html`
+* Current year as `current_year`
+* Current document graph as `document_graph`
+* Current document URI as `document_uri`
+* Current error code as `error_code` if available, error title as `error_title`, and error message as `error_message`
+* Current type name used to select template as `template_type` unless using the default template
+
+The following filters are available to the templates:
+
+* Markdown-to-HTML conversion function as `markdown_to_html`
+* Predicate value-based subject sorting function as `sort_by_predicate`
 
 ## Issues
 

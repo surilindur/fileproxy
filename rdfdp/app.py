@@ -31,6 +31,7 @@ from werkzeug.exceptions import NotFound
 from werkzeug.exceptions import NotAcceptable
 
 from rdflib.term import URIRef
+from rdflib.term import Literal
 from rdflib.namespace import RDF
 from rdflib.namespace import OWL
 from rdflib.namespace import SDO
@@ -47,6 +48,9 @@ from templates import TEMPLATE_PATH
 from constants import ACCEPT_MIMETYPES
 from constants import MIMETYPE_FORMATS
 
+# Configure Mistune
+html = Markdown(renderer=HTMLRenderer(escape=False, allow_harmful_protocols=False))
+
 # The Flask application, with template clean-ups
 app = Flask(import_name=__name__, template_folder=TEMPLATE_PATH)
 app.jinja_env.lstrip_blocks = True
@@ -54,6 +58,7 @@ app.jinja_env.trim_blocks = True
 
 # Custom filters
 app.jinja_env.filters["sort_by_predicate"] = sort_by_predicate
+app.jinja_env.filters["markdown_to_html"] = html
 
 # Load configuration from environment variables if available
 app.config.from_prefixed_env()
@@ -67,9 +72,6 @@ basicConfig(
 
 # Setup Flask-CORS
 cors = FlaskCORS(app=app)
-
-# Configure Mistune
-html = Markdown(renderer=HTMLRenderer(escape=False, allow_harmful_protocols=False))
 
 
 @app.get("/")
@@ -91,10 +93,14 @@ def get_document(path: str = "/") -> Response:
 
     # Check if the document is a schema:MediaObject with mimetype
     if (document_uri, RDF.type, SDO.MediaObject) in document_dataset:
-        document_mimetype = document_dataset.value(
+        document_encoding_format = document_dataset.value(
             subject=document_uri,
             predicate=SDO.encodingFormat,
         )
+        assert isinstance(
+            document_encoding_format, Literal
+        ), f"Missing schema:encodingFormat on {document_uri.n3()}"
+        document_mimetype = document_encoding_format
         available_mimetypes.remove("text/html")
         available_mimetypes.insert(0, document_mimetype)
 
@@ -116,13 +122,15 @@ def get_document(path: str = "/") -> Response:
         )
 
     if mimetype == document_mimetype:
+        document_file_uri = document_dataset.value(
+            subject=document_uri,
+            predicate=SDO.contentUrl,
+        )
+        assert isinstance(
+            document_file_uri, URIRef
+        ), f"Missing schema:contentUrl on {document_uri.n3()}"
         return send_file(
-            path_or_file=uri_to_path(
-                document_dataset.value(
-                    subject=document_uri,
-                    predicate=SDO.contentUrl,
-                )
-            ),
+            path_or_file=uri_to_path(document_file_uri),
             mimetype=mimetype,
         )
 
@@ -132,20 +140,28 @@ def get_document(path: str = "/") -> Response:
     document_dataset = remove_file_uris(dataset=document_dataset)
 
     if format_keyword == "html":
-        template_name, template_type = find_template(
-            uri=document_uri,
-            type_uris=document_dataset.objects(
+        document_type_uris = (
+            u
+            for u in document_dataset.objects(
                 subject=document_uri,
                 predicate=RDF.type,
                 unique=True,
-            ),
+            )
+            if isinstance(u, URIRef)
+        )
+        template_name, template_type = find_template(
+            uri=document_uri,
+            type_uris=document_type_uris,
         )
         if template_name:
-            return render_template(
-                template_name,
-                uri=document_uri,
-                type=template_type,
-                graph=document_dataset,
+            return Response(
+                response=render_template(
+                    template_name,
+                    template_type=template_type,
+                    document_uri=document_uri,
+                    document_graph=document_dataset,
+                ),
+                mimetype=mimetype,
             )
     else:
         return Response(
@@ -161,10 +177,7 @@ def get_document(path: str = "/") -> Response:
 @app.context_processor
 def handle_context() -> Dict[str, Any]:
     """Add various utility types into the template context."""
-    return {
-        "year": datetime.now(tz=UTC).year,
-        "html": html,
-    }
+    return {"current_year": datetime.now(tz=UTC).year}
 
 
 @app.errorhandler(Exception)
@@ -175,11 +188,13 @@ def handle_error(exc: Exception) -> Response:
 
     if isinstance(exc, HTTPException):
         status_code = exc.code
+        status_name = exc.name
     else:
         exception(exc)
         status_code = HTTPStatus.INTERNAL_SERVER_ERROR.value
+        status_name = HTTPStatus.INTERNAL_SERVER_ERROR.name
 
-    if request.accept_mimetypes.accept_html:
+    if request.accept_mimetypes.provided and request.accept_mimetypes.accept_html:
         try:
             response = render_template(
                 template_name_or_list=[
@@ -188,7 +203,9 @@ def handle_error(exc: Exception) -> Response:
                     f"_{status_code}.html",
                     "_error.html",
                 ],
-                error=format_exc() if app.debug else str(exc),
+                error_code=status_code,
+                error_title=status_name,
+                error_message=format_exc() if app.debug else str(exc),
             )
         except TemplateNotFound as ex:
             error(ex)

@@ -9,8 +9,8 @@
         </tr>
     </thead>
     <tbody>
-        {% for subject, predicate, object in graph %}
-        {% if subject != graph.identifier %}
+        {% for subject, predicate, object in document_graph %}
+        {% if subject != document_uri %}
         <tr id="{{ subject }}">
             <td>{{ subject }}</td>
             <td>{{ predicate }}</td>
