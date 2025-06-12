@@ -32,8 +32,5 @@
     schema:keywords "blog post" ;
     schema:articleBody <file://./post.md> .
 
-<http://localhost:8000/logo.svg> a schema:MediaObject ;
-    schema:contentUrl <file://./logo.svg> .
-
 <http://localhost:8000/robots.txt> a schema:MediaObject ;
     schema:contentUrl <file://./robots.txt> .

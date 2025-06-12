@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 
 from rdflib.term import URIRef
 from rdflib.graph import _SubjectType
+from rdflib.graph import _ObjectType
 from rdflib.graph import Graph
 from rdflib.graph import Dataset
 
@@ -26,7 +27,7 @@ def get_request_host() -> str:
     return request.headers.get(key="x-forwarded-for", default=request.host)
 
 
-def get_request_hostname() -> str:
+def get_request_hostname() -> str | None:
     """Helper function to get request host without port number."""
     return urlparse(f"http://{get_request_host()}/").hostname
 
@@ -75,7 +76,7 @@ def find_files(path: Path, extensions: Iterable[str]) -> Iterable[Path]:
             yield path
 
 
-def env_to_path(key: str, default: str | None = None) -> Path | None:
+def env_to_path(key: str, default: str | None = None) -> Path:
     """Attempts to resolve an environment variable into a path."""
 
     value = getenv(key) or default
@@ -100,12 +101,12 @@ def sort_by_predicate(
     graph: Graph,
     predicate=URIRef,
     reverse=False,
-) -> Iterable[URIRef]:
+) -> Iterable[_ObjectType]:
     """Jinja filter for sorting subjects in a graph based on a predicate value."""
 
     return sorted(
         subjects,
-        key=lambda s: graph.value(subject=s, predicate=predicate),
+        key=lambda s: graph.value(subject=s, predicate=predicate),  # type: ignore
         reverse=reverse,
     )
 
