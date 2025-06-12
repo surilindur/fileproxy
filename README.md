@@ -72,11 +72,11 @@ The fallback error template name is `_error.html`, and HTTP status code errors u
 
 The following variables are made available to the templates:
 
-* Current year as `year`
-* Current document graph as `graph`
-* Current document URI as `uri`
-* Current error message as `error`
-* Current type name used to select template as `type` unless using the default template
+* Current year as `current_year`
+* Current document graph as `document_graph`
+* Current document URI as `document_uri`
+* Current error code as `error_code` if available, error title as `error_title`, and error message as `error_message`
+* Current type name used to select template as `template_type` unless using the default template
 
 The following filters are available to the templates:
 

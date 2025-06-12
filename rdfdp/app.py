@@ -157,9 +157,9 @@ def get_document(path: str = "/") -> Response:
             return Response(
                 response=render_template(
                     template_name,
-                    uri=document_uri,
-                    type=template_type,
-                    graph=document_dataset,
+                    template_type=template_type,
+                    document_uri=document_uri,
+                    document_graph=document_dataset,
                 ),
                 mimetype=mimetype,
             )
@@ -177,7 +177,7 @@ def get_document(path: str = "/") -> Response:
 @app.context_processor
 def handle_context() -> Dict[str, Any]:
     """Add various utility types into the template context."""
-    return {"year": datetime.now(tz=UTC).year}
+    return {"current_year": datetime.now(tz=UTC).year}
 
 
 @app.errorhandler(Exception)
@@ -188,11 +188,13 @@ def handle_error(exc: Exception) -> Response:
 
     if isinstance(exc, HTTPException):
         status_code = exc.code
+        status_name = exc.name
     else:
         exception(exc)
         status_code = HTTPStatus.INTERNAL_SERVER_ERROR.value
+        status_name = HTTPStatus.INTERNAL_SERVER_ERROR.name
 
-    if request.accept_mimetypes.accept_html:
+    if request.accept_mimetypes.provided and request.accept_mimetypes.accept_html:
         try:
             response = render_template(
                 template_name_or_list=[
@@ -201,7 +203,9 @@ def handle_error(exc: Exception) -> Response:
                     f"_{status_code}.html",
                     "_error.html",
                 ],
-                error=format_exc() if app.debug else str(exc),
+                error_code=status_code,
+                error_title=status_name,
+                error_message=format_exc() if app.debug else str(exc),
             )
         except TemplateNotFound as ex:
             error(ex)

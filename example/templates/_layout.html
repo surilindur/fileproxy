@@ -1,15 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    {% if graph %}
-    {% for predicate, object in graph.predicate_objects(subject=graph.identifier, unique=True) %}
+    {% if document_graph %}
+    {% for predicate, object in document_graph.predicate_objects(subject=document_uri, unique=True) %}
     <meta property="{{ predicate }}" content="{{ object }}" />
     {% endfor %}
     {% endif %}
     <title>RDF Document Proxy</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-chtml.min.js"
-        integrity="sha512-T8xxpazDtODy3WOP/c6hvQI2O9UPdARlDWE0CvH1Cfqc0TXZF6GZcEKL7tIR8VbfS/7s/J6C+VOqrD6hIo++vQ=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-chtml.min.js" integrity="sha512-T8xxpazDtODy3WOP/c6hvQI2O9UPdARlDWE0CvH1Cfqc0TXZF6GZcEKL7tIR8VbfS/7s/J6C+VOqrD6hIo++vQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
     <header>
@@ -19,7 +17,7 @@
         {% block main %}{% endblock %}
     </main>
     <footer>
-        <p>© {{ year }}</p>
+        <p>© {{ current_year }}</p>
     </footer>
 </body>
 </html>
