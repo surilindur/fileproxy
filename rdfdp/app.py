@@ -6,6 +6,7 @@ from typing import Dict
 from logging import basicConfig
 from logging import DEBUG
 from logging import INFO
+from logging import debug
 from logging import error
 from logging import warning
 from logging import exception
@@ -20,9 +21,6 @@ from flask import send_file
 from flask.wrappers import Response
 
 from flask_cors import CORS as FlaskCORS
-
-from mistune import Markdown
-from mistune import HTMLRenderer
 
 from jinja2.exceptions import TemplateNotFound
 
@@ -40,6 +38,7 @@ from resources import get_document_data
 from utils import uri_to_path
 from utils import sort_by_predicate
 from utils import remove_file_uris
+from utils import markdown_to_html
 from utils import get_request_host
 from utils import get_request_hostname
 from utils import get_request_proto
@@ -48,9 +47,6 @@ from templates import TEMPLATE_PATH
 from constants import ACCEPT_MIMETYPES
 from constants import MIMETYPE_FORMATS
 
-# Configure Mistune
-html = Markdown(renderer=HTMLRenderer(escape=False, allow_harmful_protocols=False))
-
 # The Flask application, with template clean-ups
 app = Flask(import_name=__name__, template_folder=TEMPLATE_PATH)
 app.jinja_env.lstrip_blocks = True
@@ -58,7 +54,7 @@ app.jinja_env.trim_blocks = True
 
 # Custom filters
 app.jinja_env.filters["sort_by_predicate"] = sort_by_predicate
-app.jinja_env.filters["markdown_to_html"] = html
+app.jinja_env.filters["markdown_to_html"] = markdown_to_html
 
 # Load configuration from environment variables if available
 app.config.from_prefixed_env()
@@ -139,6 +135,9 @@ def get_document(path: str = "/") -> Response:
     # Remove the actual file URI before serving the graph
     document_dataset = remove_file_uris(dataset=document_dataset)
 
+    # Helps identify content negotiation issues
+    debug(f"Serving {document_uri.n3()} as {mimetype}")
+
     if format_keyword == "html":
         document_type_uris = (
             u
@@ -154,15 +153,14 @@ def get_document(path: str = "/") -> Response:
             type_uris=document_type_uris,
         )
         if template_name:
-            return Response(
-                response=render_template(
-                    template_name,
-                    template_type=template_type,
-                    document_uri=document_uri,
-                    document_graph=document_dataset,
-                ),
-                mimetype=mimetype,
+            html_string = render_template(
+                app_debug=app.debug,
+                template_name_or_list=template_name,
+                template_type=template_type,
+                document_uri=document_uri,
+                document_graph=document_dataset,
             )
+            return Response(response=html_string, mimetype=mimetype)
     else:
         return Response(
             response=document_dataset.serialize(format=format_keyword),
@@ -189,12 +187,14 @@ def handle_error(exc: Exception) -> Response:
     if isinstance(exc, HTTPException):
         status_code = exc.code
         status_name = exc.name
+        status_description = exc.description
     else:
         exception(exc)
         status_code = HTTPStatus.INTERNAL_SERVER_ERROR.value
-        status_name = HTTPStatus.INTERNAL_SERVER_ERROR.name
+        status_name = HTTPStatus.INTERNAL_SERVER_ERROR.phrase
+        status_description = HTTPStatus.INTERNAL_SERVER_ERROR.description
 
-    if request.accept_mimetypes.provided and request.accept_mimetypes.accept_html:
+    if request.accept_mimetypes.provided and "text/html" in request.accept_mimetypes:
         try:
             response = render_template(
                 template_name_or_list=[
@@ -203,8 +203,10 @@ def handle_error(exc: Exception) -> Response:
                     f"_{status_code}.html",
                     "_error.html",
                 ],
+                app_debug=app.debug,
                 error_code=status_code,
                 error_title=status_name,
+                error_description=status_description,
                 error_message=format_exc() if app.debug else str(exc),
             )
         except TemplateNotFound as ex:

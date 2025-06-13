@@ -15,11 +15,20 @@ from rdflib.graph import _ObjectType
 from rdflib.graph import Graph
 from rdflib.graph import Dataset
 
+from mistune import Markdown
+from mistune import HTMLRenderer
+
+from bs4 import BeautifulSoup
+
 from flask import request
 
 from constants import FILE_URI_PREFIX
 
 CHUNK_SIZE = 64 * 1024
+
+render_html = Markdown(
+    renderer=HTMLRenderer(escape=False, allow_harmful_protocols=False)
+)
 
 
 def get_request_host() -> str:
@@ -88,12 +97,21 @@ def env_to_path(key: str, default: str | None = None) -> Path:
 
 def partition_to_fragment(dataset_uri: URIRef, partition_uri: URIRef) -> URIRef:
     """Converts partition URIs from RDFLib's VoID generator into fragments."""
-
     partition_name = partition_uri.removeprefix(dataset_uri).encode("utf-8")
     partition_hash = sha256(partition_name, usedforsecurity=False).hexdigest()
     partition_fragment = URIRef(value=f"#{partition_hash}", base=dataset_uri)
 
     return partition_fragment
+
+
+# Configure Mistune
+def markdown_to_html(markdown: str) -> str:
+    """Helper function to convert Markdown into HTML and checking the output."""
+    html_string = render_html(markdown)
+    assert isinstance(html_string, str), "Failed to convert Markdown into HTML"
+    pretty_html = BeautifulSoup(markup=html_string, features="html.parser").prettify()
+    assert isinstance(pretty_html, str), "Markdown conversion produced invalid HTML"
+    return html_string
 
 
 def sort_by_predicate(
