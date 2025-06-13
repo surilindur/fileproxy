@@ -194,7 +194,7 @@ def handle_error(exc: Exception) -> Response:
         status_name = HTTPStatus.INTERNAL_SERVER_ERROR.phrase
         status_description = HTTPStatus.INTERNAL_SERVER_ERROR.description
 
-    if request.accept_mimetypes.provided and request.accept_mimetypes.accept_html:
+    if request.accept_mimetypes.provided and "text/html" in request.accept_mimetypes:
         try:
             response = render_template(
                 template_name_or_list=[
