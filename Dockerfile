@@ -18,4 +18,6 @@ RUN adduser --no-create-home --disabled-password --uid 1000 --shell /bin/sh rdfd
 
 USER rdfdp
 
+EXPOSE 8000
+
 ENTRYPOINT [ "gunicorn", "app:app" ]
