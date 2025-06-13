@@ -75,8 +75,15 @@ The following variables are made available to the templates:
 * Current year as `current_year`
 * Current document graph as `document_graph`
 * Current document URI as `document_uri`
-* Current error code as `error_code` if available, error title as `error_title`, and error message as `error_message`
 * Current type name used to select template as `template_type` unless using the default template
+* Current debug mode flag as `app_debug`
+
+For error pages, the following variables are available:
+
+* Current error code as `error_code`
+* Current error title as `error_title`
+* Current error description as `error_description`
+* Current error message as `error_message`
 
 The following filters are available to the templates:
 
