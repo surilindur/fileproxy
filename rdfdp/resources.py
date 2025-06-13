@@ -38,6 +38,7 @@ from utils import find_files
 
 # Add custom mimetypes
 add_type("application/x-bibtex", ".bib", strict=False)
+add_type("font/woff2", ".woff2", strict=False)
 
 
 def parse_rdf_file(path: Path) -> Graph:
