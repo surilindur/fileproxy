@@ -6,6 +6,7 @@ from typing import Dict
 from logging import basicConfig
 from logging import DEBUG
 from logging import INFO
+from logging import debug
 from logging import error
 from logging import warning
 from logging import exception
@@ -133,6 +134,9 @@ def get_document(path: str = "/") -> Response:
 
     # Remove the actual file URI before serving the graph
     document_dataset = remove_file_uris(dataset=document_dataset)
+
+    # Helps identify content negotiation issues
+    debug(f"Serving {document_uri.n3()} as {mimetype}")
 
     if format_keyword == "html":
         document_type_uris = (
