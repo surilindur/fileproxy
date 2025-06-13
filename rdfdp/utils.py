@@ -33,7 +33,7 @@ render_html = Markdown(
 
 def get_request_host() -> str:
     """Helper function to get request host with post number."""
-    return request.headers.get(key="x-forwarded-for", default=request.host)
+    return request.headers.get(key="x-forwarded-host", default=request.host)
 
 
 def get_request_hostname() -> str | None:

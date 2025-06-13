@@ -40,7 +40,7 @@ The application can be configured using environment variables:
 
 The following HTTP proxy headers will be taken into consideration when identifying actual resource URIs:
 
-* `X-Forwarded-For`: Substituted for the host value when provided.
+* `X-Forwarded-Host`: Substituted for the host value when provided.
 * `X-Forwarded-Proto`: Substituted for the protocol value when provided.
 
 Further configuration is possible for Flask and Flask-CORS via [environment variables](https://flask.palletsprojects.com/en/stable/api/#flask.Config.from_prefixed_env).
