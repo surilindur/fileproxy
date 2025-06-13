@@ -64,4 +64,5 @@ CUSTOM_PREFIXES: Dict[str, str] = {
     "pim": "http://www.w3.org/ns/pim/space#",
     "ldp": "http://www.w3.org/ns/ldp#",
     "solid": "http://www.w3.org/ns/solid/terms#",
+    "sd": "http://www.w3.org/ns/sparql-service-description#",
 }
