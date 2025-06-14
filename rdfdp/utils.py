@@ -13,7 +13,6 @@ from rdflib.term import URIRef
 from rdflib.graph import _SubjectType
 from rdflib.graph import _ObjectType
 from rdflib.graph import Graph
-from rdflib.graph import Dataset
 
 from mistune import Markdown
 from mistune import HTMLRenderer
@@ -129,13 +128,13 @@ def sort_by_predicate(
     )
 
 
-def remove_file_uris(dataset: Dataset) -> Dataset:
+def remove_file_uris(graph: Graph) -> Graph:
     """Helper utility to strip all file URIs from a graph, to avoid exposing them."""
 
-    for o in dataset.objects():
+    for o in graph.objects():
         if isinstance(o, URIRef) and o.startswith(FILE_URI_PREFIX):
             debug(f"Removing triples with object URI {o.n3()}")
-            for s, p in dataset.subject_predicates(object=o):
-                dataset.remove((s, p, o))
+            for s, p in graph.subject_predicates(object=o):
+                graph.remove((s, p, o))
 
-    return dataset
+    return graph

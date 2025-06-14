@@ -83,17 +83,17 @@ def get_document(path: str = "/") -> Response:
     document_uri = URIRef(
         value=path, base=f"{get_request_proto()}://{get_request_host()}"
     )
-    document_dataset = get_document_data(app_dataset=app_dataset, uri=document_uri)
+    document_graph = get_document_data(app_dataset=app_dataset, uri=document_uri)
     document_mimetype: str | None = None
 
-    if not document_dataset:
+    if not document_graph:
         raise NotFound()
 
     available_mimetypes = [*ACCEPT_MIMETYPES]
 
     # Check if the document is a schema:MediaObject with mimetype
-    if (document_uri, RDF.type, SDO.MediaObject) in document_dataset:
-        document_encoding_format = document_dataset.value(
+    if (document_uri, RDF.type, SDO.MediaObject) in document_graph:
+        document_encoding_format = document_graph.value(
             subject=document_uri,
             predicate=SDO.encodingFormat,
         )
@@ -113,7 +113,7 @@ def get_document(path: str = "/") -> Response:
     if not mimetype:
         raise NotAcceptable()
 
-    same_as = document_dataset.value(subject=document_uri, predicate=OWL.sameAs)
+    same_as = document_graph.value(subject=document_uri, predicate=OWL.sameAs)
 
     if same_as and isinstance(same_as, URIRef):
         return Response(
@@ -122,7 +122,7 @@ def get_document(path: str = "/") -> Response:
         )
 
     if mimetype == document_mimetype:
-        document_file_uri = document_dataset.value(
+        document_file_uri = document_graph.value(
             subject=document_uri,
             predicate=SDO.contentUrl,
         )
@@ -147,7 +147,7 @@ def get_document(path: str = "/") -> Response:
     format_keyword = MIMETYPE_FORMATS[mimetype]
 
     # Remove the actual file URI before serving the graph
-    document_dataset = remove_file_uris(dataset=document_dataset)
+    document_graph = remove_file_uris(graph=document_graph)
 
     # Helps identify content negotiation issues
     debug(f"Serving {document_uri.n3()} as {mimetype}")
@@ -155,7 +155,7 @@ def get_document(path: str = "/") -> Response:
     if format_keyword == "html":
         document_type_uris = (
             u
-            for u in document_dataset.objects(
+            for u in document_graph.objects(
                 subject=document_uri,
                 predicate=RDF.type,
                 unique=True,
@@ -172,12 +172,12 @@ def get_document(path: str = "/") -> Response:
                 template_name_or_list=template_name,
                 template_type=template_type,
                 document_uri=document_uri,
-                document_graph=document_dataset,
+                document_graph=document_graph,
             )
             return Response(response=html_string, mimetype=mimetype)
     else:
         return Response(
-            response=document_dataset.serialize(format=format_keyword),
+            response=document_graph.serialize(format=format_keyword),
             mimetype=mimetype,
         )
 
