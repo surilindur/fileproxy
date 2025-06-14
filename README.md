@@ -61,6 +61,10 @@ Or to set some options for [Flask](https://flask.palletsprojects.com/en/stable/c
 
 * `FLASK_USE_X_SENDFILE=true` to use `X-Sendfile` header with a proxy server.
 
+The following custom configuration options are available:
+
+* `FLASK_USE_X_ACCEL_REDIRECT`, to return static files as empty responses with the `X-Accel-Redirect` set to the on-disk file path. This requires additional server configuration, and is experimental.
+
 ## Resources
 
 The resources are defined in RDF, with static assets declared as `schema:MediaObject` with their on-disk file URIs.

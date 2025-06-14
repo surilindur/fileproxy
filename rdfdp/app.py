@@ -129,10 +129,19 @@ def get_document(path: str = "/") -> Response:
         assert isinstance(
             document_file_uri, URIRef
         ), f"Missing schema:contentUrl on {document_uri.n3()}"
-        return send_file(
-            path_or_file=uri_to_path(document_file_uri),
-            mimetype=mimetype,
-        )
+        document_file_path = uri_to_path(document_file_uri).as_posix()
+        debug(f"Serving static document from {document_file_path}")
+        if app.config.get("USE_X_ACCEL_REDIRECT") in ("true", "True", True, 1, "1"):
+            return Response(
+                status=HTTPStatus.OK,
+                headers={"X-Accel-Redirect": document_file_path},
+            )
+        else:
+            return send_file(
+                path_or_file=document_file_path,
+                mimetype=mimetype,
+                etag=True,
+            )
 
     format_keyword = MIMETYPE_FORMATS[mimetype]
 
