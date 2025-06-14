@@ -138,6 +138,7 @@ def get_document(path: str = "/") -> Response:
             return Response(
                 status=HTTPStatus.OK,
                 headers={"X-Accel-Redirect": document_file_path},
+                mimetype=mimetype,
             )
 
         # Fall back to Flask's X-SendFile support
