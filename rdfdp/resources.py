@@ -171,12 +171,10 @@ def get_dataset() -> Graph:
 
 
 @cache
-def get_document_data(app_dataset: Graph, uri: URIRef) -> Dataset:
+def get_document_data(app_dataset: Graph, uri: URIRef) -> Graph:
     """Collect the resources for a document from the dataset."""
 
-    document_dataset = Dataset(default_union=True)
-    document_dataset_uri = urljoin(base=uri, url="/", allow_fragments=False)
-    document_graph = document_dataset.add_graph(g=document_dataset_uri)
+    document_graph = Graph(identifier=uri)
 
     if app_dataset:
         # Collect the document URI itself, and all associated bnodes
@@ -190,6 +188,6 @@ def get_document_data(app_dataset: Graph, uri: URIRef) -> Dataset:
 
     # Bind additional namespaces
     for prefix, namespace_uri in CUSTOM_PREFIXES.items():
-        document_dataset.namespace_manager.bind(prefix, namespace_uri)
+        document_graph.namespace_manager.bind(prefix=prefix, namespace=namespace_uri)
 
-    return document_dataset
+    return document_graph
