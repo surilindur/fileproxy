@@ -38,7 +38,6 @@ from utils import find_files
 
 # Add custom mimetypes
 add_type("application/x-bibtex", ".bib", strict=False)
-add_type("font/woff2", ".woff2", strict=False)
 
 
 def parse_rdf_file(path: Path) -> Graph:
@@ -172,10 +171,8 @@ def get_dataset() -> Graph:
 
 
 @cache
-def get_document_data(uri: URIRef) -> Dataset:
+def get_document_data(app_dataset: Graph, uri: URIRef) -> Dataset:
     """Collect the resources for a document from the dataset."""
-
-    app_dataset = get_dataset()
 
     document_dataset = Dataset(default_union=True)
     document_dataset_uri = urljoin(base=uri, url="/", allow_fragments=False)
