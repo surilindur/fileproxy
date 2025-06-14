@@ -17,7 +17,6 @@ from rdflib.void import generateVoID
 from rdflib.term import URIRef
 from rdflib.term import Literal
 from rdflib.graph import Graph
-from rdflib.graph import Dataset
 from rdflib.namespace import RDF
 from rdflib.namespace import SDO
 from rdflib.namespace import XSD

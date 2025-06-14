@@ -13,7 +13,6 @@ from rdflib.term import URIRef
 from rdflib.graph import _SubjectType
 from rdflib.graph import _ObjectType
 from rdflib.graph import Graph
-from rdflib.graph import Dataset
 
 from mistune import Markdown
 from mistune import HTMLRenderer
