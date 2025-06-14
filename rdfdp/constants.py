@@ -19,13 +19,13 @@ MIMETYPE_FORMATS: Dict[str, str] = OrderedDict(
         ("text/plain", "turtle"),
         ("text/html", "html"),
         ("text/n3", "n3"),
-        ("application/hext", "hext"),
+        # ("application/hext", "hext"),
         ("application/ld+json", "json-ld"),
-        ("application/n-quads", "nquads"),
+        # ("application/n-quads", "nquads"),
         ("application/n-triples", "nt11"),
         ("application/rdf+xml", "pretty-xml"),
-        ("application/trig", "trig"),
-        ("application/trix", "trix"),
+        # ("application/trig", "trig"),
+        # ("application/trix", "trix"),
     )
 )
 
