@@ -34,6 +34,7 @@ from rdflib.namespace import RDF
 from rdflib.namespace import OWL
 from rdflib.namespace import SDO
 
+from resources import get_dataset
 from resources import get_document_data
 from utils import uri_to_path
 from utils import sort_by_predicate
@@ -69,6 +70,9 @@ basicConfig(
 # Setup Flask-CORS
 cors = FlaskCORS(app=app)
 
+# Collect the application dataset into cache at the beginning
+app_dataset = get_dataset()
+
 
 @app.get("/")
 @app.get("/<path:path>")
@@ -79,7 +83,7 @@ def get_document(path: str = "/") -> Response:
     document_uri = URIRef(
         value=path, base=f"{get_request_proto()}://{get_request_host()}"
     )
-    document_dataset = get_document_data(uri=document_uri)
+    document_dataset = get_document_data(app_dataset=app_dataset, uri=document_uri)
     document_mimetype: str | None = None
 
     if not document_dataset:

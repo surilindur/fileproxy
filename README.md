@@ -12,15 +12,20 @@
 Experimental simple Flask application to serve resources from local documents with content negotiation.
 Everything is declared in RDF, including static assets, to enable content negotiation over all resources.
 
-Upon first request, the application loads all RDF documents from the specified path on disk into an in-memory store,
-and fills in the remaining metadata for static assets, such as checksums and modification date,
-as well as executes all queries sorted by their names on this in-memory dataset.
-The application also generates a VoID description for each distinct hostname in the data, to treat them as datasets.
+The application performs the following during startup:
 
-For each response, the application attempts to find a corresponding resource from the in-memory store.
-When a resource is found, content negotiation is performed over this resource.
-For static assets, the native media type is preferred over the RDF metadata representations.
-For RDF resources, Turtle serialization is preferred in absence of accepted types.
+1. All the data from local RDF documents is loaded into an in-memory dataset.
+2. All the queries are executed as update queries on this in-memory dataset.
+3. VoID dataset descriptions are generated for each unique hostname, treating the hostname root URI as the dataset.
+
+Upon receiving a request, the application does the following:
+
+1. Finds the corresponding resource URI from the in-memory dataset. If no resource is found, this is reported to the client.
+2. Collects the Concise Bounded Description of every URI that would belong in the document URI, and treats this as the response data.
+3. Performs content negotiation over this resource.
+   If the document URI is declared as a `schema:MediaObject`, the application will prioritise the on-disk file mimetype over everything else.
+   Other resources will perform normal content negotiation, but prefer `text/turtle` in case of missing client preference.
+   When HTML is chosen as the format but there is no applicable template, a content negotiation error is reported.
 
 ## Dependencies
 
