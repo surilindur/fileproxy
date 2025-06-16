@@ -17,8 +17,6 @@ from rdflib.graph import Graph
 from mistune import Markdown
 from mistune import HTMLRenderer
 
-from bs4 import BeautifulSoup
-
 from flask import request
 
 from constants import FILE_URI_PREFIX
@@ -96,6 +94,7 @@ def env_to_path(key: str, default: str | None = None) -> Path:
 
 def partition_to_fragment(dataset_uri: URIRef, partition_uri: URIRef) -> URIRef:
     """Converts partition URIs from RDFLib's VoID generator into fragments."""
+
     partition_name = partition_uri.removeprefix(dataset_uri).encode("utf-8")
     partition_hash = sha256(partition_name, usedforsecurity=False).hexdigest()
     partition_fragment = URIRef(value=f"#{partition_hash}", base=dataset_uri)
@@ -106,10 +105,10 @@ def partition_to_fragment(dataset_uri: URIRef, partition_uri: URIRef) -> URIRef:
 # Configure Mistune
 def markdown_to_html(markdown: str) -> str:
     """Helper function to convert Markdown into HTML and checking the output."""
+
     html_string = render_html(markdown)
     assert isinstance(html_string, str), "Failed to convert Markdown into HTML"
-    pretty_html = BeautifulSoup(markup=html_string, features="html.parser").prettify()
-    assert isinstance(pretty_html, str), "Markdown conversion produced invalid HTML"
+
     return html_string
 
 
@@ -131,10 +130,9 @@ def sort_by_predicate(
 def remove_file_uris(graph: Graph) -> Graph:
     """Helper utility to strip all file URIs from a graph, to avoid exposing them."""
 
-    for o in graph.objects():
+    for s, p, o in graph:
         if isinstance(o, URIRef) and o.startswith(FILE_URI_PREFIX):
-            debug(f"Removing triples with object URI {o.n3()}")
-            for s, p in graph.subject_predicates(object=o):
-                graph.remove((s, p, o))
+            debug(f"Removing triple with object URI {o.n3()}")
+            graph.remove((s, p, o))
 
     return graph

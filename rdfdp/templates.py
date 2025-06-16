@@ -46,15 +46,18 @@ def load_templates() -> Dict[str, Dict[str, str]]:
 def find_template(
     uri: URIRef,
     type_uris: Iterable[URIRef],
+    app_templates: Dict[str, Dict[str, str]],
 ) -> Tuple[str | None, str | None]:
     """Attempts to locate the template for a resource with the specified types."""
 
     parsed_uri = urlparse(uri)
-    templates = load_templates()
-    domain = parsed_uri.hostname if parsed_uri.hostname in templates else DEFAULT_DOMAIN
 
-    if domain in templates:
-        domain_templates = templates[domain]
+    domain = (
+        parsed_uri.hostname if parsed_uri.hostname in app_templates else DEFAULT_DOMAIN
+    )
+
+    if domain in app_templates:
+        domain_templates = app_templates[domain]
 
         for type_uri in type_uris:
             type_uri_parsed = urlparse(type_uri)
