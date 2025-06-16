@@ -23,6 +23,7 @@ from rdflib.namespace import XSD
 from rdflib.namespace import VOID
 
 from constants import CUSTOM_PREFIXES
+from constants import CUSTOM_MIMETYPES
 from constants import FILE_URI_PREFIX
 from constants import RDF_FILE_EXTENSIONS
 from constants import XSD_DATETIME_FORMAT
@@ -35,8 +36,9 @@ from utils import env_to_path
 from utils import find_files
 
 
-# Add custom mimetypes
-add_type("application/x-bibtex", ".bib", strict=False)
+# Add custom mimetypes, or missing ones
+for mimetype, extension in CUSTOM_MIMETYPES.items():
+    add_type(mimetype, extension, strict=False)
 
 
 def parse_rdf_file(path: Path) -> Graph:

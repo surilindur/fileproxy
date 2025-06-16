@@ -66,3 +66,9 @@ CUSTOM_PREFIXES: Dict[str, str] = {
     "solid": "http://www.w3.org/ns/solid/terms#",
     "sd": "http://www.w3.org/ns/sparql-service-description#",
 }
+
+# Custom mimetypes that are missing for some reason
+CUSTOM_MIMETYPES: Dict[str, str] = {
+    "application/x-bibtex": ".bib",
+    "font/woff2": ".woff2",
+}
