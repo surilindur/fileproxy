@@ -33,8 +33,7 @@ from rdflib.namespace import RDF
 from rdflib.namespace import OWL
 from rdflib.namespace import SDO
 
-from resources import get_dataset
-from resources import get_document_data
+from resources import get_document_datasets
 from utils import uri_to_path
 from utils import sort_by_predicate
 from utils import remove_file_uris
@@ -42,6 +41,7 @@ from utils import markdown_to_html
 from utils import get_request_host
 from utils import get_request_hostname
 from utils import get_request_proto
+from templates import load_templates
 from templates import find_template
 from templates import TEMPLATE_PATH
 from constants import UTC
@@ -71,7 +71,8 @@ basicConfig(
 cors = FlaskCORS(app=app)
 
 # Collect the application dataset into cache at the beginning
-app_dataset = get_dataset()
+app_datasets = get_document_datasets()
+app_templates = load_templates()
 
 
 @app.get("/")
@@ -83,13 +84,14 @@ def get_document(path: str = "/") -> Response:
     document_uri = URIRef(
         value=path, base=f"{get_request_proto()}://{get_request_host()}"
     )
-    document_graph = get_document_data(app_dataset=app_dataset, uri=document_uri)
-    document_mimetype: str | None = None
 
-    if not document_graph:
+    if document_uri not in app_datasets:
         raise NotFound()
 
-    available_mimetypes = [*ACCEPT_MIMETYPES]
+    document_graph = app_datasets[document_uri]
+    document_mimetype: str | None = None
+
+    available_mimetypes = ACCEPT_MIMETYPES
 
     # Check if the document is a schema:MediaObject with mimetype
     if (document_uri, RDF.type, SDO.MediaObject) in document_graph:
@@ -101,8 +103,9 @@ def get_document(path: str = "/") -> Response:
             document_encoding_format, Literal
         ), f"Missing schema:encodingFormat on {document_uri.n3()}"
         document_mimetype = document_encoding_format
-        available_mimetypes.remove("text/html")
-        available_mimetypes.insert(0, document_mimetype)
+        available_mimetypes = tuple(
+            (document_mimetype, *(m for m in ACCEPT_MIMETYPES if m != "text/html"))
+        )
 
     mimetype = (
         request.accept_mimetypes.best_match(available_mimetypes)
@@ -165,6 +168,7 @@ def get_document(path: str = "/") -> Response:
         template_name, template_type = find_template(
             uri=document_uri,
             type_uris=document_type_uris,
+            app_templates=app_templates,
         )
         if template_name:
             html_string = render_template(

@@ -115,16 +115,19 @@ def parse_rdf_file(path: Path) -> Graph:
 def get_dataset() -> Graph:
     """Loads all data from the specified path as an RDF graph."""
 
-    data_path = env_to_path("DATA_PATH", "data")
-    queries_path = env_to_path("QUERIES_PATH", "queries")
+    graph = Graph()
 
-    graph = Graph(identifier=data_path.as_posix())
-
-    for path in find_files(path=data_path, extensions=RDF_FILE_EXTENSIONS):
+    for path in find_files(
+        path=env_to_path("DATA_PATH"),
+        extensions=RDF_FILE_EXTENSIONS,
+    ):
         info(f"Loading {path}")
         graph += parse_rdf_file(path=path)
 
-    for path in find_files(path=queries_path, extensions=SPARQL_FILE_EXTENSIONS):
+    for path in find_files(
+        path=env_to_path("QUERIES_PATH"),
+        extensions=SPARQL_FILE_EXTENSIONS,
+    ):
         info(f"Applying {path}")
         with open(path, "r", encoding="utf-8") as query_file:
             graph.update(query_file.read())
@@ -168,27 +171,33 @@ def get_dataset() -> Graph:
 
     info(f"Loaded {len(graph)} triples")
 
+    # Bind additional namespaces
+    for prefix, namespace_uri in CUSTOM_PREFIXES.items():
+        graph.namespace_manager.bind(prefix=prefix, namespace=namespace_uri)
+
     return graph
 
 
 @cache
-def get_document_data(app_dataset: Graph, uri: URIRef) -> Graph:
-    """Collect the resources for a document from the dataset."""
+def get_document_datasets() -> Dict[URIRef, Graph]:
+    """Collect the document datasets into their own ready-to-serialize graphs."""
 
-    document_graph = Graph(identifier=uri)
+    dataset = get_dataset()
+    document_datasets: Dict[URIRef, Graph] = {}
 
-    if app_dataset:
-        # Collect the document URI itself, and all associated bnodes
-        app_dataset.cbd(resource=uri, target_graph=document_graph)
+    info("Preparing document datasets")
 
-        # Collect all fragments that belong in the document URI, and their bnodes
-        uri_fragment_prefix = f"{uri}#"
-        for s in app_dataset.subjects(unique=True):
-            if isinstance(s, URIRef) and s.startswith(uri_fragment_prefix):
-                app_dataset.cbd(resource=s, target_graph=document_graph)
+    for s in dataset.subjects(unique=True):
+        if isinstance(s, URIRef):
+            s_document = URIRef(s.split("#")[0])
+            if s_document not in document_datasets:
+                debug(f"Registered {s_document.n3()} as document")
+                document_datasets[s_document] = Graph(
+                    identifier=s_document,
+                    namespace_manager=dataset.namespace_manager,
+                )
+            dataset.cbd(resource=s, target_graph=document_datasets[s_document])
 
-    # Bind additional namespaces
-    for prefix, namespace_uri in CUSTOM_PREFIXES.items():
-        document_graph.namespace_manager.bind(prefix=prefix, namespace=namespace_uri)
+    info(f"Prepared {len(document_datasets)} document datasets")
 
-    return document_graph
+    return document_datasets
