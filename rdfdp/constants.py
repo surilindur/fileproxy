@@ -74,6 +74,8 @@ CUSTOM_PREFIXES: Dict[str, str] = {
 
 # Custom mimetypes that are missing for some reason
 CUSTOM_MIMETYPES: Dict[str, str] = {
+    "image/avif": ".avif",
+    "image/webp": ".webp",
     "application/x-bibtex": ".bib",
     "font/woff2": ".woff2",
 }
