@@ -10,7 +10,6 @@ from logging import debug
 from logging import error
 from logging import warning
 from logging import exception
-from datetime import UTC
 from datetime import datetime
 from traceback import format_exc
 
@@ -45,6 +44,7 @@ from utils import get_request_hostname
 from utils import get_request_proto
 from templates import find_template
 from templates import TEMPLATE_PATH
+from constants import UTC
 from constants import ACCEPT_MIMETYPES
 from constants import MIMETYPE_FORMATS
 
