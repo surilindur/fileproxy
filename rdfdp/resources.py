@@ -7,8 +7,7 @@ from logging import debug
 from logging import info
 from logging import warning
 from datetime import datetime
-from datetime import UTC
-from mimetypes import guess_file_type
+from mimetypes import guess_type
 from mimetypes import add_type
 from functools import cache
 from urllib.parse import urljoin
@@ -22,6 +21,7 @@ from rdflib.namespace import SDO
 from rdflib.namespace import XSD
 from rdflib.namespace import VOID
 
+from constants import UTC
 from constants import CUSTOM_PREFIXES
 from constants import CUSTOM_MIMETYPES
 from constants import FILE_URI_PREFIX
@@ -79,7 +79,7 @@ def parse_rdf_file(path: Path) -> Graph:
         graph.set((s, SDO.name, Literal(s_path.name)))
 
         # Add mimetype
-        s_type = guess_file_type(path=s_path, strict=False)[0]
+        s_type = guess_type(url=s_path, strict=False)[0]
         graph.set((s, SDO.encodingFormat, Literal(s_type)))
 
         # Add SHA256 checksum
@@ -94,7 +94,7 @@ def parse_rdf_file(path: Path) -> Graph:
             (s_stat.st_ctime, SDO.dateCreated),
             (s_stat.st_mtime, SDO.dateModified),
         ):
-            ts_datetime = datetime.fromtimestamp(timestamp=ts, tz=UTC)
+            ts_datetime = datetime.fromtimestamp(ts, tz=UTC)
             graph.set(
                 (
                     s,

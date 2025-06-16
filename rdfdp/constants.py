@@ -3,10 +3,15 @@
 from typing import Set
 from typing import Dict
 from typing import Sequence
+from datetime import timedelta
+from datetime import timezone
 from collections import OrderedDict
 
 from rdflib.term import URIRef
 from rdflib.namespace import SDO
+
+# Workaround for older Python versions
+UTC = timezone(offset=timedelta(), name="UTC")
 
 # The prefix of file URIs
 FILE_URI_PREFIX = "file://"
