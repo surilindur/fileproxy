@@ -33,6 +33,7 @@ Upon receiving a request, the application does the following:
 * [RDFLib](https://github.com/RDFLib/rdflib)
 * [Flask](https://github.com/pallets/flask)
 * [Flask-CORS](https://github.com/corydolphin/flask-cors)
+* [Flask-Compress](https://github.com/colour-science/flask-compress)
 * [Mistune](https://github.com/lepture/mistune)
 
 ## Usage
@@ -56,6 +57,10 @@ For example, to configure [Flask-CORS](https://flask-cors.readthedocs.io/en/late
 * `FLASK_CORS_METHODS='[ "GET", "HEAD", "OPTIONS" ]'` to only allow `GET` and `HEAD` requests.
 * `FLASK_CORS_ORIGINS='*'` to allow any `Origin`.
 * `FLASK_CORS_SUPPORTS_CREDENTIALS=true` to avoid CORS errors when credentials are provided.
+
+To configure [Flask-Compress](https://github.com/colour-science/flask-compress?tab=readme-ov-file#options):
+
+* `FLASK_COMPRESS_ALGORITHM='[ "zstd" ]'`
 
 Or to set some options for [Flask](https://flask.palletsprojects.com/en/stable/config/):
 

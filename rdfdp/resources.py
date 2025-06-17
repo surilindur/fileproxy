@@ -7,6 +7,7 @@ from logging import debug
 from logging import info
 from logging import warning
 from datetime import datetime
+from datetime import timezone
 from mimetypes import guess_type
 from mimetypes import add_type
 from functools import cache
@@ -21,7 +22,6 @@ from rdflib.namespace import SDO
 from rdflib.namespace import XSD
 from rdflib.namespace import VOID
 
-from constants import UTC
 from constants import CUSTOM_PREFIXES
 from constants import CUSTOM_MIMETYPES
 from constants import FILE_URI_PREFIX
@@ -94,7 +94,7 @@ def parse_rdf_file(path: Path) -> Graph:
             (s_stat.st_ctime, SDO.dateCreated),
             (s_stat.st_mtime, SDO.dateModified),
         ):
-            ts_datetime = datetime.fromtimestamp(ts, tz=UTC)
+            ts_datetime = datetime.fromtimestamp(ts, tz=timezone.utc)
             graph.set(
                 (
                     s,

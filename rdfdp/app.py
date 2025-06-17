@@ -11,6 +11,7 @@ from logging import error
 from logging import warning
 from logging import exception
 from datetime import datetime
+from datetime import timezone
 from traceback import format_exc
 
 from flask import Flask
@@ -20,6 +21,8 @@ from flask import send_file
 from flask.wrappers import Response
 
 from flask_cors import CORS as FlaskCORS
+
+from flask_compress import Compress as FlaskCompress
 
 from jinja2.exceptions import TemplateNotFound
 
@@ -44,9 +47,9 @@ from utils import get_request_proto
 from templates import load_templates
 from templates import find_template
 from templates import TEMPLATE_PATH
-from constants import UTC
 from constants import ACCEPT_MIMETYPES
 from constants import MIMETYPE_FORMATS
+from constants import HTTP_HEADER_DATE_FORMAT
 
 # The Flask application, with template clean-ups
 app = Flask(import_name=__name__, template_folder=TEMPLATE_PATH)
@@ -56,6 +59,9 @@ app.jinja_env.trim_blocks = True
 # Custom filters
 app.jinja_env.filters["sort_by_predicate"] = sort_by_predicate
 app.jinja_env.filters["markdown_to_html"] = markdown_to_html
+
+# Assign the compression defaults based on internal type support
+app.config.setdefault("COMPRESS_MIMETYPES", ACCEPT_MIMETYPES)
 
 # Load configuration from environment variables if available
 app.config.from_prefixed_env()
@@ -68,11 +74,15 @@ basicConfig(
 )
 
 # Setup Flask-CORS
-cors = FlaskCORS(app=app)
+FlaskCORS(app=app)
+
+# Setup Flask-Compress
+FlaskCompress(app=app)
 
 # Collect the application dataset into cache at the beginning
 app_datasets = get_document_datasets()
 app_templates = load_templates()
+app_startup = datetime.now(tz=timezone.utc)
 
 
 @app.get("/")
@@ -181,7 +191,7 @@ def get_document(path: str = "/") -> Response:
             return Response(response=html_string, mimetype=mimetype)
     else:
         return Response(
-            response=document_graph.serialize(format=format_keyword),
+            response=document_graph.serialize(format=format_keyword, encoding="utf-8"),
             mimetype=mimetype,
         )
 
@@ -190,10 +200,49 @@ def get_document(path: str = "/") -> Response:
     raise NotAcceptable()
 
 
+@app.before_request
+def request_preprocess() -> Response | None:
+    """Performs common preprocessing on the request."""
+
+    if request.method in ("GET", "HEAD"):
+        # Handle requests with If-Modified-Since
+        modified_since_header = request.headers.get("If-Modified-Since")
+        if modified_since_header:
+            try:
+                modified_since_utc = datetime.strptime(
+                    modified_since_header,
+                    HTTP_HEADER_DATE_FORMAT,
+                ).replace(tzinfo=timezone.utc)
+            except ValueError:
+                error(f'Malformed If-Modified-Since header: "{modified_since_header}"')
+                return Response(status=HTTPStatus.BAD_REQUEST)
+            if app_startup < modified_since_utc:
+                return Response(status=HTTPStatus.NOT_MODIFIED)
+
+    return None
+
+
+@app.after_request
+def request_postprocess(response: Response) -> Response:
+    """Performs common postprocessing on the response."""
+
+    if (
+        response.status_code >= 200
+        and response.status_code < 400
+        and request.method in ("GET", "HEAD")
+    ):
+        response.headers.set(
+            "Last-Modified",
+            app_startup.strftime(HTTP_HEADER_DATE_FORMAT),
+        )
+
+    return response
+
+
 @app.context_processor
 def handle_context() -> Dict[str, Any]:
     """Add various utility types into the template context."""
-    return {"current_year": datetime.now(tz=UTC).year}
+    return {"current_year": datetime.now(tz=timezone.utc).year}
 
 
 @app.errorhandler(Exception)
