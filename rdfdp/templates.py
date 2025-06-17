@@ -18,7 +18,7 @@ from utils import find_files
 TEMPLATE_EXTENSIONS: Set[str] = set((".html",))
 
 # Path to templates
-TEMPLATE_PATH = env_to_path("TEMPLATE_PATH", "templates")
+TEMPLATE_PATH = env_to_path("TEMPLATE_PATH")
 
 # Defaults
 DEFAULT_DOMAIN = "_"

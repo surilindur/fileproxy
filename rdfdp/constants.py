@@ -3,15 +3,10 @@
 from typing import Set
 from typing import Dict
 from typing import Sequence
-from datetime import timedelta
-from datetime import timezone
 from collections import OrderedDict
 
 from rdflib.term import URIRef
 from rdflib.namespace import SDO
-
-# Workaround for older Python versions
-UTC = timezone(offset=timedelta(), name="UTC")
 
 # The prefix of file URIs
 FILE_URI_PREFIX = "file://"
@@ -62,6 +57,9 @@ CONTENT_EMBED_PREDICATES: Set[URIRef] = set((SDO.articleBody, SDO.text))
 # The date format used for xsd:dateTime
 XSD_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
 
+# The date format used by HTTP headers
+HTTP_HEADER_DATE_FORMAT = "%a, %d %b %Y %H:%M:%S GMT"  # Wed, 21 Oct 2015 07:28:00 GMT
+
 # Custom namespace prefixes that are not included in RDFLib by default
 CUSTOM_PREFIXES: Dict[str, str] = {
     "vcard": "http://www.w3.org/2006/vcard/ns#",
@@ -78,4 +76,5 @@ CUSTOM_MIMETYPES: Dict[str, str] = {
     "image/webp": ".webp",
     "application/x-bibtex": ".bib",
     "font/woff2": ".woff2",
+    **ADDITIONAL_MIMETYPES,
 }
