@@ -11,7 +11,7 @@ WORKDIR /opt/rdfdp
 RUN pypy3 -m ensurepip
 RUN pypy3 -m pip install --upgrade pip setuptools
 RUN pypy3 -m pip install -r requirements.txt
-RUN pypy3 -m pip install gunicorn>=23.0.0
+RUN pypy3 -m pip install gunicorn[gevent]>=23.0.0
 
 ENV DATA_PATH=/usr/share/rdfdpdata/data
 ENV QUERIES_PATH=/usr/share/rdfdpdata/queries
