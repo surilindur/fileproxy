@@ -20,8 +20,6 @@ from flask import render_template
 from flask import send_file
 from flask.wrappers import Response
 
-from flask_compress import Compress as FlaskCompress
-
 from jinja2.exceptions import TemplateNotFound
 
 from werkzeug.exceptions import HTTPException
@@ -70,9 +68,6 @@ basicConfig(
     datefmt="%Y-%m-%dT%H:%M:%S%z",
     level=DEBUG if app.debug else INFO,
 )
-
-# Setup Flask-Compress
-FlaskCompress(app=app)
 
 # Collect the application dataset into cache at the beginning
 app_datasets = get_document_datasets()

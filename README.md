@@ -32,7 +32,6 @@ Upon receiving a request, the application does the following:
 * Python
 * [RDFLib](https://github.com/RDFLib/rdflib)
 * [Flask](https://github.com/pallets/flask)
-* [Flask-Compress](https://github.com/colour-science/flask-compress)
 * [Mistune](https://github.com/lepture/mistune)
 
 ## Usage
@@ -56,10 +55,6 @@ For example, to set some options for [Flask](https://flask.palletsprojects.com/e
 The following custom configuration options are available:
 
 * `FLASK_USE_X_ACCEL_REDIRECT`, to return static files as empty responses with the `X-Accel-Redirect` set to the on-disk file path. This requires additional server configuration, and is experimental.
-
-To configure [Flask-Compress](https://github.com/colour-science/flask-compress?tab=readme-ov-file#options):
-
-* `FLASK_COMPRESS_ALGORITHM='[ "zstd" ]'`
 
 ## Resources
 
