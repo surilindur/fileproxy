@@ -32,7 +32,6 @@ Upon receiving a request, the application does the following:
 * Python
 * [RDFLib](https://github.com/RDFLib/rdflib)
 * [Flask](https://github.com/pallets/flask)
-* [Flask-CORS](https://github.com/corydolphin/flask-cors)
 * [Flask-Compress](https://github.com/colour-science/flask-compress)
 * [Mistune](https://github.com/lepture/mistune)
 
@@ -49,26 +48,18 @@ The following HTTP proxy headers will be taken into consideration when identifyi
 * `X-Forwarded-Host`: Substituted for the host value when provided.
 * `X-Forwarded-Proto`: Substituted for the protocol value when provided.
 
-Further configuration is possible for Flask and Flask-CORS via [environment variables](https://flask.palletsprojects.com/en/stable/api/#flask.Config.from_prefixed_env).
-For example, to configure [Flask-CORS](https://flask-cors.readthedocs.io/en/latest/configuration.html):
-
-* `FLASK_CORS_ALWAYS_SEND=false` to not force send CORS headers when not requested.
-* `FLASK_CORS_MAX_AGE=3600` to set `Access-Control-Max-Age` to 3600 seconds.
-* `FLASK_CORS_METHODS='[ "GET", "HEAD", "OPTIONS" ]'` to only allow `GET` and `HEAD` requests.
-* `FLASK_CORS_ORIGINS='*'` to allow any `Origin`.
-* `FLASK_CORS_SUPPORTS_CREDENTIALS=true` to avoid CORS errors when credentials are provided.
-
-To configure [Flask-Compress](https://github.com/colour-science/flask-compress?tab=readme-ov-file#options):
-
-* `FLASK_COMPRESS_ALGORITHM='[ "zstd" ]'`
-
-Or to set some options for [Flask](https://flask.palletsprojects.com/en/stable/config/):
+Further configuration is possible for Flask via [environment variables](https://flask.palletsprojects.com/en/stable/api/#flask.Config.from_prefixed_env).
+For example, to set some options for [Flask](https://flask.palletsprojects.com/en/stable/config/):
 
 * `FLASK_USE_X_SENDFILE=true` to use `X-Sendfile` header with a proxy server.
 
 The following custom configuration options are available:
 
 * `FLASK_USE_X_ACCEL_REDIRECT`, to return static files as empty responses with the `X-Accel-Redirect` set to the on-disk file path. This requires additional server configuration, and is experimental.
+
+To configure [Flask-Compress](https://github.com/colour-science/flask-compress?tab=readme-ov-file#options):
+
+* `FLASK_COMPRESS_ALGORITHM='[ "zstd" ]'`
 
 ## Resources
 
