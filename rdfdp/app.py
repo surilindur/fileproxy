@@ -226,6 +226,11 @@ def request_postprocess(response: Response) -> Response:
             app_startup.strftime(HTTP_HEADER_DATE_FORMAT),
         )
 
+    if app.debug and request.method == "OPTIONS":
+        response.headers.set("Access-Control-Allow-Origin", "*")
+        response.headers.set("Access-Control-Allow-Credentials", "true")
+        response.headers.set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
+
     return response
 
 
